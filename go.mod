@@ -1,4 +1,4 @@
-module ActiveState/vt10x
+module github.com/ActiveState/vt10x
 
 go 1.13
 
