@@ -90,9 +90,10 @@ func (t *VT) Write(p []byte) (int, error) {
 
 // Close closes the io.ReadWriteCloser.
 func (t *VT) Close() error {
-	if t.rwc != nil {
-		return t.rwc.Close()
+	if t.rwc == nil {
+		return nil
 	}
+	return t.rwc.Close()
 }
 
 // Parse blocks on read on io.ReadWriteCloser, then parses sequences until
