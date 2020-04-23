@@ -192,6 +192,21 @@ func (t *State) restoreCursor() {
 	t.moveTo(t.cur.x, t.cur.y)
 }
 
+// WriteString processes the given string and updates the state
+// This function is usually used for testing, as it also initializes the states,
+// so previous state modifications are lost
+func (t *State) WriteString(s string, rows, cols int) {
+	t.numlock = true
+	t.state = t.parse
+	t.cur.attr.fg = DefaultBG
+	t.cur.attr.bg = DefaultBG
+	t.resize(rows, cols)
+	t.reset()
+	for _, c := range []rune(s) {
+		t.put(c)
+	}
+}
+
 func (t *State) put(c rune) bool {
 	return t.state(c)
 }
@@ -284,6 +299,7 @@ func (t *State) reset() {
 	t.mode = ModeWrap
 	t.clear(0, 0, t.rows-1, t.cols-1)
 	t.moveTo(0, 0)
+	t.history = make([]line, 0)
 }
 
 // TODO: definitely can improve allocs
@@ -761,6 +777,11 @@ func (t *State) UnwrappedStringToCursorFrom(row int, col int) string {
 func (t *State) HasStringBeforeCursor(m string) bool {
 	um := []rune(m)
 	i := len(um) - 1
+
+	// quick check if there actually is enough data written to the terminal
+	if len(um) > (len(t.history)+t.cur.y+1)*t.cols {
+		return false
+	}
 
 	onWrap := t.cur.state&cursorWrapNext != 0
 	x := t.cur.x
