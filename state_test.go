@@ -15,6 +15,13 @@ func TestStateStrings(t *testing.T) {
 	require.NoError(t, err, "terminal created")
 	term.Resize(6, 3)
 
+	_, err = term.Write([]byte("\x1b"))
+	assert.False(t, st.HasStringBeforeCursor("hi"), "not to match anything")
+	assert.Equal(t, "\n", st.StringBeforeCursor(), "empty string")
+	_, err = term.Write([]byte("[1;1H"))
+	assert.False(t, st.HasStringBeforeCursor("hi"), "expect still not to match anything")
+	assert.Equal(t, "\n", st.StringBeforeCursor(), "empty string 2")
+
 	_, err = term.Write([]byte("      world\033[1;1Hhello\033[2;6H"))
 	require.NoError(t, err, "write hello world")
 	cx, cy := st.Cursor()
