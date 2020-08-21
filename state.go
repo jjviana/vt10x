@@ -776,8 +776,8 @@ func (t *State) UnwrappedStringToCursorFrom(row int, col int) string {
 // matchRune checks if the rune `expected` matches the rune `got`
 // it also returns the updated index `i` assuming that we are going backwards in an array of of expected runes (as is done in HasStringBeforeCursor())
 // if `ignoreNewlinesAndSpaces` is true, newlines and spaces that mismatch are skipped over.
-func matchRune(got rune, expected rune, i int, ignoreNewlinesAndSpaces bool) (bool, int) {
-	exactMatch := got == expected
+func matchRune(got rune, expected []rune, i int, ignoreNewlinesAndSpaces bool) (bool, int) {
+	exactMatch := got == expected[i]
 	if exactMatch {
 		return true, i - 1
 	}
@@ -789,8 +789,11 @@ func matchRune(got rune, expected rune, i int, ignoreNewlinesAndSpaces bool) (bo
 		return true, i
 	}
 
-	if expected == ' ' || expected == '\n' || expected == '\r' {
-		return true, i - 1
+	if expected[i] == ' ' || expected[i] == '\n' || expected[i] == '\r' {
+		if i == 0 {
+			return true, -1
+		}
+		return matchRune(got, expected, i-1, true)
 	}
 
 	return false, i
@@ -822,7 +825,7 @@ func (t *State) HasStringBeforeCursor(m string, ignoreNewlinesAndSpaces bool) bo
 		for ; x >= 0 && i >= 0; x-- {
 			c, _, _ := t.Cell(x, y)
 			var isOk bool
-			isOk, i = matchRune(c, runesToMatch[i], i, ignoreNewlinesAndSpaces)
+			isOk, i = matchRune(c, runesToMatch, i, ignoreNewlinesAndSpaces)
 			if !isOk {
 				return false
 			}
@@ -834,7 +837,7 @@ func (t *State) HasStringBeforeCursor(m string, ignoreNewlinesAndSpaces bool) bo
 		for x = t.cols - 1; x >= 0 && i >= 0; x-- {
 			c := t.history[y][x].c
 			var isOk bool
-			isOk, i = matchRune(c, runesToMatch[i], i, ignoreNewlinesAndSpaces)
+			isOk, i = matchRune(c, runesToMatch, i, ignoreNewlinesAndSpaces)
 			if !isOk {
 				return false
 			}

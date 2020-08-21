@@ -16,10 +16,10 @@ func TestStateStrings(t *testing.T) {
 	term.Resize(6, 3)
 
 	_, err = term.Write([]byte("\x1b"))
-	assert.False(t, st.HasStringBeforeCursor("hi"), "not to match anything")
+	assert.False(t, st.HasStringBeforeCursor("hi", false), "not to match anything")
 	assert.Equal(t, "\n", st.StringBeforeCursor(), "empty string")
 	_, err = term.Write([]byte("[1;1H"))
-	assert.False(t, st.HasStringBeforeCursor("hi"), "expect still not to match anything")
+	assert.False(t, st.HasStringBeforeCursor("hi", false), "expect still not to match anything")
 	assert.Equal(t, "\n", st.StringBeforeCursor(), "empty string 2")
 
 	_, err = term.Write([]byte("      world\033[1;1Hhello\033[2;6H"))
@@ -31,8 +31,9 @@ func TestStateStrings(t *testing.T) {
 	assert.Equal(t, 5, gx1, "global col after hello world")
 	assert.Equal(t, 1, gy1, "global row after hello world")
 
-	assert.True(t, st.HasStringBeforeCursor("hello world"), "expected hello world")
-	assert.False(t, st.HasStringBeforeCursor("hallo welt"), "did not expect hallo welt")
+	assert.True(t, st.HasStringBeforeCursor("hello world", false), "expected hello world")
+	assert.False(t, st.HasStringBeforeCursor("hallo welt", false), "did not expect hallo welt")
+	assert.False(t, st.HasStringBeforeCursor("hallo welt", true), "did not expect hallo welt in long string")
 	assert.Equal(t, "hello \nworld\n", st.StringBeforeCursor())
 	assert.Equal(t, "hello world", st.UnwrappedStringBeforeCursor())
 	assert.Equal(t, "orld", st.UnwrappedStringToCursorFrom(1, 1))
@@ -51,7 +52,7 @@ func TestStateStrings(t *testing.T) {
 	assert.Equal(t, 1, gy2, "global row after !")
 	assert.Equal(t, "hello \nworld!\n", st.StringBeforeCursor())
 	assert.Equal(t, "hello world!", st.UnwrappedStringBeforeCursor())
-	assert.True(t, st.HasStringBeforeCursor("hello world!"), "expected hello world!")
+	assert.True(t, st.HasStringBeforeCursor("hello world!", false), "expected hello world!")
 	assert.Equal(t, "!", st.UnwrappedStringToCursorFrom(gy1, gx1))
 	assert.Equal(t, "hello \nworld!\n      \n", st.String(), "full terminal")
 
@@ -70,7 +71,8 @@ func TestStateStrings(t *testing.T) {
 	assert.Equal(t, "llo world!l1    l2", st.UnwrappedStringToCursorFrom(0, 2))
 	assert.Equal(t, "world!l1    l2", st.UnwrappedStringBeforeCursor())
 	assert.Equal(t, "world!\nl1    \nl2\n", st.StringBeforeCursor())
-	assert.True(t, st.HasStringBeforeCursor("l2"), "expected l2")
+	assert.True(t, st.HasStringBeforeCursor("l2", false), "expected l2")
+	assert.True(t, st.HasStringBeforeCursor("hello world!\nl1\nl2", true), "expected hello world!\\nl1\\nl2")
 
 	// add another line scroll world! out of view
 	_, err = term.Write([]byte("\n\rl3"))
@@ -90,7 +92,9 @@ func TestStateStrings(t *testing.T) {
 	assert.Equal(t, "l1    l2    l3", st.UnwrappedStringToCursorFrom(-1, 0))
 	assert.Equal(t, "l1    l2    l3", st.UnwrappedStringBeforeCursor())
 	assert.Equal(t, "l1    \nl2    \nl3\n", st.StringBeforeCursor())
-	assert.True(t, st.HasStringBeforeCursor("l3"), "expected l3")
-	assert.True(t, st.HasStringBeforeCursor("hello world!l1    l2    l3"), "expected everything")
-	assert.False(t, st.HasStringBeforeCursor("hallo welt!l1    l2    l3"), "did not expect hello welt")
+	assert.True(t, st.HasStringBeforeCursor("l3", false), "expected l3")
+	assert.True(t, st.HasStringBeforeCursor("hello world!l1    l2    l3", false), "expected everything")
+	assert.True(t, st.HasStringBeforeCursor("hello world!l1\r\nl2 \r\nl3", true), "expected everything in long string")
+	assert.False(t, st.HasStringBeforeCursor("hallo welt!l1    l2    l3", false), "did not expect hello welt")
+	assert.False(t, st.HasStringBeforeCursor("hallo welt!l1\r\nl2 \r\nl3", true), "did not expect hello welt in long string")
 }
